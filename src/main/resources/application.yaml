@@ -1,3 +1,45 @@
 spring:
   application:
     name: mechano-auth-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mechano?currentSchema=auth
+    username: mechanoDB
+    password: ${MECHANO_DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+    hikari:
+      schema: auth
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+server:
+  port: 8081
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+
+mechano:
+  security:
+    jwt:
+      secret: ${MECHANO_JWT_SECRET}
+      issuer: mechano-auth
+      access-exp-minutes: 20
+      refresh-exp-days: 7
