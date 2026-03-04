@@ -3,13 +3,13 @@ spring:
     name: mechano-auth-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/mechano?currentSchema=auth
+    url: jdbc:postgresql://localhost:5432/mechano?currentSchema=public
     username: mechanoDB
     password: ${MECHANO_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
     hikari:
-      schema: auth
+      schema: public
 
   jpa:
     hibernate:
@@ -22,6 +22,7 @@ spring:
   liquibase:
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.yaml
+    liquibase-schema: public
 
 server:
   port: 8081
