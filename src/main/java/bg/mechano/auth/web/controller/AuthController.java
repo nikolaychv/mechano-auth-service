@@ -3,6 +3,7 @@ package bg.mechano.auth.web.controller;
 import bg.mechano.auth.service.AuthService;
 import bg.mechano.auth.web.dto.AuthTokensResponse;
 import bg.mechano.auth.web.dto.LoginRequest;
+import bg.mechano.auth.web.dto.RefreshTokenRequest;
 import bg.mechano.auth.web.dto.RegisterRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +19,23 @@ public class AuthController {
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    public void register(@Valid @RequestBody RegisterRequest request) {
+    public void register(
+            @Valid @RequestBody RegisterRequest request
+    ) {
         authService.register(request);
     }
 
     @PostMapping("/login")
-    public AuthTokensResponse login(@Valid @RequestBody LoginRequest request) {
+    public AuthTokensResponse login(
+            @Valid @RequestBody LoginRequest request
+    ) {
         return authService.login(request);
+    }
+
+    @PostMapping("/refresh")
+    public AuthTokensResponse refresh(
+            @Valid @RequestBody RefreshTokenRequest request
+    ) {
+        return authService.refresh(request);
     }
 }

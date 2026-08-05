@@ -5,10 +5,12 @@ import bg.mechano.auth.domain.entity.User;
 import bg.mechano.auth.domain.repository.UserRepository;
 import bg.mechano.auth.web.dto.AuthTokensResponse;
 import bg.mechano.auth.web.dto.LoginRequest;
+import bg.mechano.auth.web.dto.RefreshTokenRequest;
 import bg.mechano.auth.web.dto.RegisterRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -23,6 +25,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
 
+    @Transactional
     public void register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
             throw new IllegalArgumentException("Email already exists.");
@@ -35,7 +38,9 @@ public class AuthService {
         User user = new User();
         user.setEmail(request.email());
         user.setUsername(request.username());
-        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setPasswordHash(
+                passwordEncoder.encode(request.password())
+        );
         user.setActive(true);
         user.setCreatedAt(LocalDateTime.now());
         user.getRoles().add(Role.ROLE_USER);
@@ -43,22 +48,61 @@ public class AuthService {
         userRepository.save(user);
     }
 
+    @Transactional
     public AuthTokensResponse login(LoginRequest request) {
-
         User user = userRepository.findByUsername(request.username())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid credentials."));
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Invalid credentials.")
+                );
 
         if (!user.isActive()) {
             throw new IllegalArgumentException("User is inactive.");
         }
 
-        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+        if (!passwordEncoder.matches(
+                request.password(),
+                user.getPasswordHash()
+        )) {
             throw new IllegalArgumentException("Invalid credentials.");
         }
 
         String accessToken = jwtService.generateAccessToken(user);
-        String refreshToken = refreshTokenService.createRefreshToken(user);
+        String refreshToken =
+                refreshTokenService.createRefreshToken(user);
 
+        return createResponse(
+                user,
+                accessToken,
+                refreshToken
+        );
+    }
+
+    @Transactional
+    public AuthTokensResponse refresh(
+            RefreshTokenRequest request
+    ) {
+        RefreshTokenRotationResult result =
+                refreshTokenService.rotateRefreshToken(
+                        request.refreshToken()
+                );
+
+        User user = result.user();
+
+        String accessToken =
+                jwtService.generateAccessToken(user);
+
+        return createResponse(
+                user,
+                accessToken,
+                result.refreshToken()
+        );
+    }
+
+    private AuthTokensResponse createResponse(
+            User user,
+            String accessToken,
+            String refreshToken
+    ) {
         Set<String> roles = user.getRoles()
                 .stream()
                 .map(Enum::name)
