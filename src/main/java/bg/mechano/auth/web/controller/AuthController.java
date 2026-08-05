@@ -1,7 +1,7 @@
 package bg.mechano.auth.web.controller;
 
 import bg.mechano.auth.service.AuthService;
-import bg.mechano.auth.web.dto.AuthResponse;
+import bg.mechano.auth.web.dto.AuthTokensResponse;
 import bg.mechano.auth.web.dto.LoginRequest;
 import bg.mechano.auth.web.dto.RegisterRequest;
 import jakarta.validation.Valid;
@@ -23,7 +23,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
+    public AuthTokensResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
     }
 }

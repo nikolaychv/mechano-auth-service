@@ -3,7 +3,7 @@ package bg.mechano.auth.service;
 import bg.mechano.auth.domain.entity.Role;
 import bg.mechano.auth.domain.entity.User;
 import bg.mechano.auth.domain.repository.UserRepository;
-import bg.mechano.auth.web.dto.AuthResponse;
+import bg.mechano.auth.web.dto.AuthTokensResponse;
 import bg.mechano.auth.web.dto.LoginRequest;
 import bg.mechano.auth.web.dto.RegisterRequest;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +21,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
     public void register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
@@ -42,7 +43,8 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    public AuthResponse login(LoginRequest request) {
+    public AuthTokensResponse login(LoginRequest request) {
+
         User user = userRepository.findByUsername(request.username())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid credentials."));
 
@@ -55,13 +57,16 @@ public class AuthService {
         }
 
         String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = refreshTokenService.createRefreshToken(user);
+
         Set<String> roles = user.getRoles()
                 .stream()
                 .map(Enum::name)
                 .collect(Collectors.toSet());
 
-        return new AuthResponse(
+        return new AuthTokensResponse(
                 accessToken,
+                refreshToken,
                 "Bearer",
                 jwtService.getAccessExpSeconds(),
                 roles
