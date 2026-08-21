@@ -38,9 +38,7 @@ public class AuthService {
         User user = new User();
         user.setEmail(request.email());
         user.setUsername(request.username());
-        user.setPasswordHash(
-                passwordEncoder.encode(request.password())
-        );
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setActive(true);
         user.setCreatedAt(LocalDateTime.now());
         user.getRoles().add(Role.ROLE_USER);
@@ -67,8 +65,7 @@ public class AuthService {
         }
 
         String accessToken = jwtService.generateAccessToken(user);
-        String refreshToken =
-                refreshTokenService.createRefreshToken(user);
+        String refreshToken = refreshTokenService.createRefreshToken(user);
 
         return createResponse(
                 user,
@@ -78,9 +75,7 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthTokensResponse refresh(
-            RefreshTokenRequest request
-    ) {
+    public AuthTokensResponse refresh(RefreshTokenRequest request) {
         RefreshTokenRotationResult result =
                 refreshTokenService.rotateRefreshToken(
                         request.refreshToken()
@@ -95,6 +90,13 @@ public class AuthService {
                 user,
                 accessToken,
                 result.refreshToken()
+        );
+    }
+
+    @Transactional
+    public void logout(RefreshTokenRequest request) {
+        refreshTokenService.revokeRefreshToken(
+                request.refreshToken()
         );
     }
 

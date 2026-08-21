@@ -41,3 +41,16 @@ databaseChangeLog:
 
               CREATE INDEX IF NOT EXISTS ix_auth_refresh_tokens_user_id
                 ON auth.refresh_tokens(user_id);
+
+  - changeSet:
+      id: 002-add-unique-refresh-token-hash-index
+      author: nikolay
+      changes:
+        - createIndex:
+            schemaName: auth
+            tableName: refresh_tokens
+            indexName: uq_auth_refresh_tokens_token_hash
+            unique: true
+            columns:
+              - column:
+                  name: token_hash

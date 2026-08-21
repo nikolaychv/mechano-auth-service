@@ -19,6 +19,7 @@ public class RefreshTokenService {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final RefreshTokenRepository refreshTokenRepository;
+    private final TokenHashService tokenHashService;
 
     @Value("${mechano.security.jwt.refresh-exp-days}")
     private long refreshExpDays;
@@ -29,7 +30,7 @@ public class RefreshTokenService {
 
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setUser(user);
-        refreshToken.setTokenHash(rawToken);
+        refreshToken.setTokenHash(tokenHashService.hash(rawToken));
         refreshToken.setCreatedAt(LocalDateTime.now());
         refreshToken.setExpiresAt(
                 LocalDateTime.now().plusDays(refreshExpDays)
@@ -42,17 +43,20 @@ public class RefreshTokenService {
 
     @Transactional
     public RefreshTokenRotationResult rotateRefreshToken(String rawToken) {
+        String tokenHash = tokenHashService.hash(rawToken);
+
         RefreshToken existingToken = refreshTokenRepository
-                .findByTokenHashAndRevokedAtIsNull(rawToken)
+                .findByTokenHashAndRevokedAtIsNull(tokenHash)
                 .orElseThrow(() ->
                         new IllegalArgumentException("Invalid refresh token.")
                 );
 
         if (existingToken.getExpiresAt().isBefore(LocalDateTime.now())) {
             existingToken.setRevokedAt(LocalDateTime.now());
-            refreshTokenRepository.save(existingToken);
 
-            throw new IllegalArgumentException("Refresh token has expired.");
+            throw new IllegalArgumentException(
+                    "Refresh token has expired."
+            );
         }
 
         User user = existingToken.getUser();
@@ -62,7 +66,6 @@ public class RefreshTokenService {
         }
 
         existingToken.setRevokedAt(LocalDateTime.now());
-        refreshTokenRepository.save(existingToken);
 
         String newRefreshToken = createRefreshToken(user);
 
@@ -70,6 +73,19 @@ public class RefreshTokenService {
                 user,
                 newRefreshToken
         );
+    }
+
+    @Transactional
+    public void revokeRefreshToken(String rawToken) {
+        String tokenHash = tokenHashService.hash(rawToken);
+
+        RefreshToken refreshToken = refreshTokenRepository
+                .findByTokenHashAndRevokedAtIsNull(tokenHash)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Invalid refresh token.")
+                );
+
+        refreshToken.setRevokedAt(LocalDateTime.now());
     }
 
     private String generateToken() {
