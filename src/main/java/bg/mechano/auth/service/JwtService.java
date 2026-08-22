@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class JwtService {
@@ -26,14 +27,19 @@ public class JwtService {
             @Value("${mechano.security.jwt.issuer}") String issuer,
             @Value("${mechano.security.jwt.access-exp-minutes}") long accessExpMinutes
     ) {
-        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.secretKey = Keys.hmacShaKeyFor(
+                secret.getBytes(StandardCharsets.UTF_8)
+        );
         this.issuer = issuer;
         this.accessExpMinutes = accessExpMinutes;
     }
 
     public String generateAccessToken(User user) {
         Instant now = Instant.now();
-        Instant expiry = now.plus(accessExpMinutes, ChronoUnit.MINUTES);
+        Instant expiry = now.plus(
+                accessExpMinutes,
+                ChronoUnit.MINUTES
+        );
 
         Set<String> roles = user.getRoles()
                 .stream()
@@ -41,6 +47,7 @@ public class JwtService {
                 .collect(java.util.stream.Collectors.toSet());
 
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())
                 .subject(String.valueOf(user.getId()))
                 .issuer(issuer)
                 .issuedAt(Date.from(now))
