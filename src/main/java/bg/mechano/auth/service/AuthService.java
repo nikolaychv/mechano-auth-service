@@ -24,48 +24,79 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final UserProfileProvisioningService
+            userProfileProvisioningService;
 
     @Transactional
     public void register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("Email already exists.");
+        String email = request.email().trim();
+        String username = request.username().trim();
+
+        if (userRepository.existsByEmail(email)) {
+            throw new IllegalArgumentException(
+                    "Email already exists."
+            );
         }
 
-        if (userRepository.existsByUsername(request.username())) {
-            throw new IllegalArgumentException("Username already exists.");
+        if (userRepository.existsByUsername(username)) {
+            throw new IllegalArgumentException(
+                    "Username already exists."
+            );
         }
 
         User user = new User();
-        user.setEmail(request.email());
-        user.setUsername(request.username());
-        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        user.setEmail(email);
+        user.setUsername(username);
+        user.setPasswordHash(
+                passwordEncoder.encode(
+                        request.password()
+                )
+        );
         user.setActive(true);
         user.setCreatedAt(LocalDateTime.now());
         user.getRoles().add(Role.ROLE_USER);
 
-        userRepository.save(user);
+        user = userRepository.save(user);
+
+        userProfileProvisioningService
+                .createProfileIfMissing(
+                        user.getId()
+                );
     }
 
     @Transactional
-    public AuthTokensResponse login(LoginRequest request) {
-        User user = userRepository.findByUsername(request.username())
+    public AuthTokensResponse login(
+            LoginRequest request
+    ) {
+        User user = userRepository
+                .findByUsername(request.username())
                 .orElseThrow(() ->
-                        new IllegalArgumentException("Invalid credentials.")
+                        new IllegalArgumentException(
+                                "Invalid credentials."
+                        )
                 );
 
         if (!user.isActive()) {
-            throw new IllegalArgumentException("User is inactive.");
+            throw new IllegalArgumentException(
+                    "User is inactive."
+            );
         }
 
         if (!passwordEncoder.matches(
                 request.password(),
                 user.getPasswordHash()
         )) {
-            throw new IllegalArgumentException("Invalid credentials.");
+            throw new IllegalArgumentException(
+                    "Invalid credentials."
+            );
         }
 
-        String accessToken = jwtService.generateAccessToken(user);
-        String refreshToken = refreshTokenService.createRefreshToken(user);
+        String accessToken =
+                jwtService.generateAccessToken(user);
+
+        String refreshToken =
+                refreshTokenService
+                        .createRefreshToken(user);
 
         return createResponse(
                 user,
@@ -75,11 +106,14 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthTokensResponse refresh(RefreshTokenRequest request) {
+    public AuthTokensResponse refresh(
+            RefreshTokenRequest request
+    ) {
         RefreshTokenRotationResult result =
-                refreshTokenService.rotateRefreshToken(
-                        request.refreshToken()
-                );
+                refreshTokenService
+                        .rotateRefreshToken(
+                                request.refreshToken()
+                        );
 
         User user = result.user();
 
@@ -94,10 +128,13 @@ public class AuthService {
     }
 
     @Transactional
-    public void logout(RefreshTokenRequest request) {
-        refreshTokenService.revokeRefreshToken(
-                request.refreshToken()
-        );
+    public void logout(
+            RefreshTokenRequest request
+    ) {
+        refreshTokenService
+                .revokeRefreshToken(
+                        request.refreshToken()
+                );
     }
 
     private AuthTokensResponse createResponse(
@@ -105,10 +142,13 @@ public class AuthService {
             String accessToken,
             String refreshToken
     ) {
-        Set<String> roles = user.getRoles()
-                .stream()
-                .map(Enum::name)
-                .collect(Collectors.toSet());
+        Set<String> roles =
+                user.getRoles()
+                        .stream()
+                        .map(Enum::name)
+                        .collect(
+                                Collectors.toSet()
+                        );
 
         return new AuthTokensResponse(
                 accessToken,
