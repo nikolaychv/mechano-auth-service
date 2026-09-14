@@ -1,7 +1,22 @@
 ## About
 
-Mechano Auth Service is a standalone authentication service for the Mechano platform.
+Mechano Auth Service is a dedicated authentication and authorization service for the Mechano vehicle maintenance platform.
 
-It is responsible for user registration, login, JWT access token generation, refresh token handling, logout, and role management. The service stores authentication-related data separately from the main Mechano business domain while using the same PostgreSQL database with a dedicated schema.
+It handles user registration, login, JWT access tokens, refresh tokens, logout, and user roles. Authentication data is stored in a dedicated `auth` schema, while the main Mechano backend manages user profiles and business data in the `public` schema.
 
-The service is built with Java 21, Spring Boot, Spring Security, Spring Data JPA, PostgreSQL, Liquibase, and OpenAPI. It supports role-based authentication with `ROLE_USER`, `ROLE_SHOP_OWNER`, and `ROLE_ADMIN`, short-lived JWT access tokens, and revocable refresh tokens.
+New registrations are assigned the standard `ROLE_USER` role, while additional roles such as `ROLE_SHOP_OWNER` and `ROLE_ADMIN` can be managed separately.
+
+### Main Features
+
+- User registration
+- User login
+- JWT access token generation
+- Refresh token rotation
+- Logout and refresh token revocation
+- Role-based authorization
+- Support for `ROLE_USER`, `ROLE_SHOP_OWNER`, and `ROLE_ADMIN`
+- Automatic creation of a corresponding Mechano user profile
+- PostgreSQL database
+- Liquibase database migrations
+- Swagger / OpenAPI documentation
+- Spring Security integration
